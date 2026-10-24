@@ -1,0 +1,11 @@
+# Credenciales y secretos de Firebase
+firebase_key.json
+credenciales.json
+serviceAccountKey.json
+*.service-account.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
