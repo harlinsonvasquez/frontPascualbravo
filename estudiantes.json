@@ -1,0 +1,22 @@
+{
+  "-P4jlAbRXWws3WKAJu55": {
+    "nombre": "maximiliano vasquez",
+    "correo": "maxi@gmail.com",
+    "edad": 18
+  },
+  "estudiante_ana_001": {
+    "nombre": "Ana Pérez",
+    "correo": "ana.perez@example.com",
+    "edad": 20
+  },
+  "estudiante_luis_002": {
+    "nombre": "Luis Gómez",
+    "correo": "luis.gomez@example.com",
+    "edad": 22
+  },
+  "estudiante_sofia_003": {
+    "nombre": "Sofía Morales",
+    "correo": "sofia.morales@example.com",
+    "edad": 19
+  }
+}

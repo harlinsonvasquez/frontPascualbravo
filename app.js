@@ -287,8 +287,7 @@ async function deleteRecord(id) {
   }
 }
 
-async function seedExamples() {
-  if (!window.confirm("Se agregarán ejemplos sin sobrescribir registros existentes. ¿Continuar?")) return;
+async function ensureExampleData() {
   const students = {
     demo_estudiante_1: { nombre: "Ana Pérez", correo: "ana@example.com", edad: 20 },
     demo_estudiante_2: { nombre: "Luis Gómez", correo: "luis@example.com", edad: 22 }
@@ -304,16 +303,44 @@ async function seedExamples() {
     const currentStudents = studentSnapshot.val() || {};
     const currentCourses = courseSnapshot.val() || {};
     const currentEnrollments = enrollmentSnapshot.val() || {};
-    const changes = [];
-    Object.entries(students).forEach(([id, value]) => { if (!currentStudents[id]) changes.push(set(ref(database, `estudiantes/${id}`), value)); });
-    Object.entries(courses).forEach(([id, value]) => { if (!currentCourses[id]) changes.push(set(ref(database, `cursos/${id}`), value)); });
-    if (!Object.keys(currentEnrollments).length) changes.push(set(ref(database, "matriculas/demo_matricula_1"), {
-      id_estudiante: "demo_estudiante_1", id_curso: "demo_curso_1", periodo: "2026-2", nota: 4.5
-    }));
-    await Promise.all(changes);
-    showToast(changes.length ? "Datos de ejemplo agregados sin duplicar registros." : "Los datos de ejemplo ya existen; no hubo cambios.", "info");
+    const additions = {};
+    Object.entries(students).forEach(([id, value]) => {
+      if (!currentStudents[id]) additions[`estudiantes/${id}`] = value;
+    });
+    Object.entries(courses).forEach(([id, value]) => {
+      if (!currentCourses[id]) additions[`cursos/${id}`] = value;
+    });
+
+    const availableStudentIds = new Set([...Object.keys(currentStudents), ...Object.keys(students)]);
+    const availableCourseIds = new Set([...Object.keys(currentCourses), ...Object.keys(courses)]);
+    if (
+      !currentEnrollments.demo_matricula_1 &&
+      availableStudentIds.has("demo_estudiante_1") &&
+      availableCourseIds.has("demo_curso_1")
+    ) {
+      additions["matriculas/demo_matricula_1"] = {
+        id_estudiante: "demo_estudiante_1",
+        id_curso: "demo_curso_1",
+        periodo: "2026-2",
+        nota: 4.5
+      };
+    }
+
+    const count = Object.keys(additions).length;
+    if (count) await update(ref(database), additions);
+    return count;
   } catch (error) {
-    showToast(readableError(error), "error");
+    throw new Error(readableError(error));
+  }
+}
+
+async function seedExamples() {
+  if (!window.confirm("Se agregarán ejemplos solo si faltan; los registros existentes se conservarán. ¿Continuar?")) return;
+  try {
+    const count = await ensureExampleData();
+    showToast(count ? `Se agregaron ${count} registros de ejemplo.` : "Los registros de ejemplo ya están completos.", "info");
+  } catch (error) {
+    showToast(`No se pudieron preparar los ejemplos: ${error.message}`, "error");
   }
 }
 
@@ -331,3 +358,10 @@ document.addEventListener("keydown", (event) => {
   }
 });
 startListeners();
+ensureExampleData()
+  .then((count) => {
+    if (count) showToast(`Se prepararon ${count} registros de ejemplo para iniciar.` , "info");
+  })
+  .catch((error) => {
+    showToast(`No se pudieron preparar los registros de ejemplo: ${error.message}`, "error");
+  });

@@ -13,9 +13,9 @@ Aplicación de consola en Python y panel web adaptable para administrar los nodo
 
 3. Abre [http://localhost:8000/index.html](http://localhost:8000/index.html).
 
-El panel muestra las tres colecciones, búsqueda por texto o ID, altas con ID generado, edición (los campos de texto vacíos conservan su valor), y eliminación con confirmación. La aplicación valida los campos, verifica las referencias de matrículas y bloquea la eliminación de estudiantes o cursos asociados. La opción lateral permite cargar ejemplos de forma opcional e idempotente.
+El panel muestra las tres colecciones, búsqueda por texto o ID, altas con ID generado, edición (los campos de texto vacíos conservan su valor), y eliminación con confirmación. La aplicación valida los campos, verifica las referencias de matrículas y bloquea la eliminación de estudiantes o cursos asociados. La opción lateral permite volver a preparar los ejemplos de forma idempotente.
 
-El navegador se conecta con la configuración web de `config.js`; Firebase aplica las reglas de Realtime Database también a esta interfaz. Si aparece permiso denegado, revisa las reglas y la autenticación requerida por tu proyecto. No publiques credenciales de cuenta de servicio ni habilites acceso abierto en una base con datos sensibles.
+Al abrir el panel, este prepara automáticamente los registros de ejemplo con IDs fijos. Solo agrega los que falten y no reemplaza ni borra registros existentes; puedes volver a ejecutar la opción lateral **Cargar datos de ejemplo** si borras alguno. El navegador se conecta con la configuración web de `config.js`; Firebase aplica las reglas de Realtime Database también a esta interfaz. La base debe permitir al cliente leer los nodos y crear los registros de ejemplo. Si aparece permiso denegado, revisa las reglas y la autenticación requerida por tu proyecto. No publiques credenciales de cuenta de servicio ni habilites acceso abierto en una base con datos sensibles.
 
 ## Aplicación de consola
 
@@ -48,7 +48,7 @@ Para evidenciar la actividad, crea dos estudiantes y dos cursos, registra una ma
 
 ## Datos de ejemplo
 
-En el panel web usa **Cargar datos de ejemplo** o en la consola selecciona la opción 4. La acción no se ejecuta automáticamente; crea ejemplos con IDs fijos, omite IDs ya existentes y no sobrescribe datos. Si ya existen matrículas, no agrega la matrícula de ejemplo.
+En el panel web los ejemplos se preparan automáticamente al abrir la página; en la consola selecciona la opción 4. Ambas cargas usan IDs fijos, omiten registros que ya existan y no sobrescriben ni eliminan datos. La matrícula de ejemplo se agrega si faltaba y sus referencias de estudiante y curso están disponibles.
 
 ## Problemas frecuentes
 
