@@ -44,10 +44,10 @@
       </section>
 
       <section class="data-panel">
-        <div class="panel-heading"><div><h2 id="table-title">Directorio de estudiantes</h2><p id="record-count">Cargando registros…</p></div><label class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Buscar por nombre o ID…" autocomplete="off"><kbd>/</kbd></label></div>
+        <div class="panel-heading"><div><h2 id="table-title">Directorio de estudiantes</h2><p id="record-count">Cargando registros…</p></div><div class="panel-tools"><label class="search-box"><span>⌕</span><input id="search-input" type="search" placeholder="Filtrar por nombre o ID…" autocomplete="off"><kbd>/</kbd></label><button class="secondary-button search-id-button" id="search-id-button" type="button">Buscar por ID</button></div></div>
         <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
         <div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div>
-        <div class="table-footer"><span id="footer-count">—</span><button class="refresh-button" id="refresh-button" type="button"><span>↻</span> Actualizar lista</button></div>
+        <div class="table-footer"><span id="footer-count">—</span><button class="refresh-button" id="refresh-button" type="button"><span>↻</span> Listar todos</button></div>
       </section>
       <footer class="page-footer">Los cambios se guardan directamente en Firebase Realtime Database.</footer>
     </main>
@@ -57,6 +57,7 @@
     <form id="record-form" novalidate>
       <div class="dialog-top"><div><span class="dialog-kicker" id="dialog-kicker">NUEVO REGISTRO</span><h2 id="dialog-title">Crear estudiante</h2></div><button class="icon-button" type="button" id="close-dialog" aria-label="Cerrar">×</button></div>
       <p class="dialog-description" id="dialog-description">Completa la información para guardar un nuevo registro.</p>
+      <div class="form-error" id="form-error" role="alert" hidden></div>
       <div id="form-fields" class="form-fields"></div>
       <div class="dialog-actions"><button class="secondary-button" type="button" id="cancel-dialog">Cancelar</button><button class="primary-button" type="submit" id="submit-button">Guardar registro <span>→</span></button></div>
     </form>

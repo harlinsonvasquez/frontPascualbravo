@@ -15,8 +15,8 @@ const fields = {
     { key: "creditos", label: "Créditos", type: "number", min: 1, max: 10, step: 1, placeholder: "3", required: true }
   ],
   matriculas: [
-    { key: "id_estudiante", label: "Estudiante", type: "select", source: "estudiantes", required: true },
-    { key: "id_curso", label: "Curso", type: "select", source: "cursos", required: true },
+    { key: "id_estudiante", label: "ID del estudiante", type: "text", source: "estudiantes", placeholder: "Pega o escribe el ID", required: true },
+    { key: "id_curso", label: "ID del curso", type: "text", source: "cursos", placeholder: "Pega o escribe el ID", required: true },
     { key: "periodo", label: "Periodo académico", type: "text", placeholder: "2026-2", required: true },
     { key: "nota", label: "Nota final", type: "number", min: 0, max: 5, step: 0.1, placeholder: "4.5", required: true }
   ]
@@ -50,6 +50,12 @@ function showNotice(message, kind = "error") {
   notice.hidden = !message;
   notice.className = `notice ${kind}`;
   notice.textContent = message;
+}
+
+function showFormError(message = "") {
+  const error = $("#form-error");
+  error.textContent = message;
+  error.hidden = !message;
 }
 
 function readableError(error) {
@@ -185,6 +191,22 @@ function createInput(field, current = "") {
     input.value = current ?? "";
     input.required = !state.editingId;
     wrapper.append(input);
+    if (field.source) {
+      const listId = `${field.key}-options`;
+      input.setAttribute("list", listId);
+      const options = document.createElement("datalist"); options.id = listId;
+      Object.entries(state.all[field.source] || {}).forEach(([id, record]) => {
+        const option = document.createElement("option");
+        option.value = id;
+        option.label = record?.nombre || id;
+        options.append(option);
+      });
+      wrapper.append(options);
+      const hint = document.createElement("small");
+      hint.className = "field-hint";
+      hint.textContent = "Escribe el ID o selecciónalo de las sugerencias. Se comprobará que exista al guardar.";
+      wrapper.append(hint);
+    }
     if (field.key === "edad") {
       const hint = document.createElement("small"); hint.className = "field-hint"; hint.textContent = "Edad permitida: de 1 a 120 años."; wrapper.append(hint);
     }
@@ -205,7 +227,9 @@ function openForm(id = null) {
   $("#dialog-description").textContent = id ? "Deja en blanco los campos que quieras conservar sin cambios." : "Completa los campos para guardar este registro en Firebase.";
   $("#submit-button").innerHTML = id ? "Guardar cambios <span>→</span>" : "Guardar registro <span>→</span>";
   const container = $("#form-fields"); container.replaceChildren();
+  showFormError();
   fields[collection].forEach((field) => container.append(createInput(field, current?.[field.key] ?? "")));
+  container.oninput = () => showFormError();
   dialog.showModal();
   container.querySelector("input, select")?.focus();
 }
@@ -245,14 +269,14 @@ async function saveRecord(event) {
     if (collection === "matriculas") await assertReferencesExist(changes, state.editingId);
     if (state.editingId) {
       await update(ref(database, `${collection}/${state.editingId}`), changes);
-      dialog.close(); showToast("Registro actualizado correctamente.");
+      showFormError(); dialog.close(); showToast("Registro actualizado correctamente.");
     } else {
       const newRef = push(ref(database, collection));
       await set(newRef, changes);
-      dialog.close(); showToast(`Registro creado. ID: ${newRef.key}`);
+      showFormError(); dialog.close(); showToast(`Registro creado. ID: ${newRef.key}`);
     }
   } catch (error) {
-    showToast(readableError(error), "error");
+    showFormError(readableError(error));
   }
 }
 
@@ -261,7 +285,50 @@ async function assertReferencesExist(changes, editingId) {
   const finalValues = { ...current, ...changes };
   for (const [field, collection] of [["id_estudiante", "estudiantes"], ["id_curso", "cursos"]]) {
     const snapshot = await get(ref(database, `${collection}/${finalValues[field] || ""}`));
-    if (!snapshot.exists()) throw new Error(`El ${field.replace("_", " ")} seleccionado ya no existe.`);
+    if (!snapshot.exists()) {
+      const tipo = field === "id_estudiante" ? "estudiante" : "curso";
+      throw new Error(`No existe un ${tipo} con ID "${finalValues[field] || ""}". Corrige el ID para continuar.`);
+    }
+  }
+}
+
+async function listCurrentCollection() {
+  const collection = state.collection;
+  try {
+    const snapshot = await get(ref(database, collection));
+    state.all[collection] = snapshot.val() || {};
+    $("#search-input").value = "";
+    const count = Object.keys(state.all[collection]).length;
+    $(`#count-${collection}`).textContent = count;
+    $(`#total-${collection}`).textContent = count;
+    renderTable();
+    showToast(`Listado actualizado: ${count} registros.`, "info");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  }
+}
+
+async function searchCurrentById() {
+  const id = window.prompt(`Escribe el ID exacto del registro de ${labels[state.collection].toLowerCase()}:`);
+  if (id === null) return;
+  const normalizedId = id.trim();
+  if (!normalizedId) {
+    showToast("Escribe un ID para realizar la búsqueda.", "error");
+    return;
+  }
+  try {
+    const snapshot = await get(ref(database, `${state.collection}/${normalizedId}`));
+    if (snapshot.exists()) state.all[state.collection][normalizedId] = snapshot.val();
+    else delete state.all[state.collection][normalizedId];
+    const count = Object.keys(state.all[state.collection] || {}).length;
+    $(`#count-${state.collection}`).textContent = count;
+    $(`#total-${state.collection}`).textContent = count;
+    $("#search-input").value = normalizedId;
+    renderTable();
+    if (snapshot.exists()) showToast(`Registro encontrado: ${normalizedId}`, "success");
+    else showToast(`No existe un registro con el ID "${normalizedId}".`, "error");
+  } catch (error) {
+    showToast(readableError(error), "error");
   }
 }
 
@@ -350,7 +417,8 @@ $("#record-form").addEventListener("submit", saveRecord);
 $("#close-dialog").addEventListener("click", () => dialog.close());
 $("#cancel-dialog").addEventListener("click", () => dialog.close());
 $("#search-input").addEventListener("input", renderTable);
-$("#refresh-button").addEventListener("click", () => { renderTable(); showToast("Lista actualizada.", "info"); });
+$("#refresh-button").addEventListener("click", listCurrentCollection);
+$("#search-id-button").addEventListener("click", searchCurrentById);
 $("#seed-button").addEventListener("click", seedExamples);
 document.addEventListener("keydown", (event) => {
   if (event.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) {
